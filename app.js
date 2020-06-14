@@ -15,6 +15,16 @@ app.use(bodyParser.urlencoded({
 }));
 
 app.use(express.static("public"));
+mongoose.connect("mongodb://localhost:27017/todolistDB", {useUnifiedTopology: true});
+
+const itemsSchema = new mongoose.Schema({
+    Name:{
+        type: String,
+        required: true
+    }
+}),
+
+const Item = mongoose.model("Item", itemsSchema);
 
 app.get("/", function (req, res) {
     var options = {
