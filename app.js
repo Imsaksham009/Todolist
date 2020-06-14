@@ -3,8 +3,6 @@ const bodyParser = require("body-parser");
 const request = require("request");
 const ejs = require("ejs");
 const mongoose = require("mongoose");
-var newItems = ["Wake Up Early", "Do Yoga", "Kill Corona Virus"];
-var workItems = [];
 
 const app = express();
 
@@ -15,45 +13,79 @@ app.use(bodyParser.urlencoded({
 }));
 
 app.use(express.static("public"));
-mongoose.connect("mongodb://localhost:27017/todolistDB", {useUnifiedTopology: true});
+mongoose.connect("mongodb://localhost:27017/todolistDB", {
+    useUnifiedTopology: true
+});
 
 const itemsSchema = new mongoose.Schema({
-    Name:{
+    Name: {
         type: String,
         required: true
     }
-}),
+});
 
 const Item = mongoose.model("Item", itemsSchema);
 
+const item1 = new Item({
+    Name: "Welcome to the to do list"
+});
+const item2 = new Item({
+    Name: "Hit + to add new item"
+});
+const item3 = new Item({
+    Name: "<-- to delete the item"
+});
+
+const defaultItems = [item1, item2, item3];
+
 app.get("/", function (req, res) {
-    var options = {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric'
-    };
-    var today = new Date();
-    var day = today.toLocaleDateString("hi-IN", options);
-    res.render("list", {
-        listTitle: day,
-        items: newItems
+
+    Item.find(function (err, foundItems) {
+        if (err) {
+            console.log("err");
+        } else {
+            if (foundItems.length === 0) {
+                Item.insertMany(defaultItems, function (err) {
+                    if (err) {
+                        console.log("err");
+                    } else {
+                        console.log("Inserted new items");
+                    }
+                    res.redirect("/");
+                });
+            } else {
+                res.render("list", {
+                    listTitle: "Today",
+                    items: foundItems
+                });
+            }
+
+
+        }
     });
 });
 
 
 app.post("/", function (req, res) {
-    var newItem = req.body.newItem;
-    console.log(req.body.title)
-    if (req.body.title === "Work") {
-        workItems.push(newItem);
-        res.redirect("/work");
-    } else {
-        newItems.push(newItem);
-        res.redirect("/");
-    }
+    const itemName = req.body.newItem;
 
-   
+    const item = new Item({
+        Name: itemName
+    });
 
+    item.save();
+    res.redirect("/");
+});
+
+app.post("/delete",function(req,res){
+    const checkedItem = req.body.checkbox;
+    console.log(checkedItem);
+    Item.findByIdAndRemove(checkedItem, function(err){
+        if(!err){
+            console.log("no error. Successfully removd the item");
+        }
+    });
+    res.redirect("/");
 });
 
 
