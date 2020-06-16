@@ -159,6 +159,6 @@ app.post("/work", function (req, res) {
     res.redirect("/work");
 })
 
-app.listen(2500, function () {
+app.listen(process.env.PORT || 2500, function () {
     console.log("we are at server 2500");
 });
