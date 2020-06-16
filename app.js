@@ -15,8 +15,9 @@ app.use(bodyParser.urlencoded({
 }));
 
 app.use(express.static("public"));
-mongoose.connect("mongodb://localhost:27017/todolistDB", {
-    useUnifiedTopology: true
+mongoose.connect("mongodb+srv://admin-saksham:Gupta123@cluster0-ne94m.mongodb.net/todolistDB", {
+    useUnifiedTopology: true,
+    useNewUrlParser: true
 });
 
 const itemsSchema = new mongoose.Schema({
