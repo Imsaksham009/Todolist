@@ -3,6 +3,8 @@ const bodyParser = require("body-parser");
 const request = require("request");
 const ejs = require("ejs");
 const mongoose = require("mongoose");
+var _ = require('lodash');
+const { lastIndexOf } = require("lodash");
 
 const app = express();
 
@@ -20,9 +22,17 @@ mongoose.connect("mongodb://localhost:27017/todolistDB", {
 const itemsSchema = new mongoose.Schema({
     Name: {
         type: String,
-        required: true
     }
 });
+
+
+const listSchema = new mongoose.Schema({
+    name: String,
+    items: [itemsSchema]
+});
+
+const List = mongoose.model("List", listSchema);
+
 
 const Item = mongoose.model("Item", itemsSchema);
 
@@ -68,33 +78,81 @@ app.get("/", function (req, res) {
 
 app.post("/", function (req, res) {
     const itemName = req.body.newItem;
-
+    const title = req.body.title;
     const item = new Item({
         Name: itemName
     });
 
-    item.save();
-    res.redirect("/");
+    if (title === "Today") {
+        item.save();
+        res.redirect("/");
+    } else {
+        List.findOne({
+            name: title
+        }, function (err, foundList) {
+            if (!err) {
+                foundList.items.push(item);
+                foundList.save();
+                res.redirect("/" + title);
+
+            }
+        });
+
+    }
 });
 
-app.post("/delete",function(req,res){
+
+
+app.post("/delete", function (req, res) {
     const checkedItem = req.body.checkbox;
-    console.log(checkedItem);
-    Item.findByIdAndRemove(checkedItem, function(err){
-        if(!err){
-            console.log("no error. Successfully removd the item");
+    const listName = req.body.listName;
+
+    if (listName === "Today") {
+        console.log(checkedItem);
+        Item.findByIdAndRemove(checkedItem, function (err) {
+            if (!err) {
+                console.log("no error. Successfully removd the item");
+            }
+        });
+        res.redirect("/");
+    }
+    else{
+        List.findOneAndUpdate({name: listName},{$pull: {items: {_id: checkedItem}}},function(err,foundList){
+            res.redirect("/"+listName);
+            console.log(checkedItem);
+        });
+    }
+
+});
+
+app.get("/:title", function (req, res) {
+    var requestedTitle = req.params.title;
+    var listTitleName = _.upperFirst(requestedTitle);
+    console.log(listTitleName);
+    List.findOne({
+        name: listTitleName
+    }, function (err, foundList) {
+        if (err) {
+            console.log("Err");
+        } else {
+            if (foundList) {
+                res.render("list", {
+                    listTitle: listTitleName,
+                    items: foundList.items
+                });
+            } else {
+                const list = new List({
+                    name: listTitleName,
+                    items: defaultItems
+                });
+
+                list.save();
+                res.redirect("/" + listTitleName);
+            }
         }
     });
-    res.redirect("/");
 });
 
-
-app.get("/work", function (req, res) {
-    res.render("list", {
-        listTitle: "Work Items",
-        items: workItems
-    });
-});
 
 app.post("/work", function (req, res) {
     res.redirect("/work");
